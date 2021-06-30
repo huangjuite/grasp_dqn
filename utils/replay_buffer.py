@@ -17,12 +17,12 @@ class GraspDataset(Dataset):
         self.color_buf = np.zeros([self.size, 224, 224, 3], dtype=np.float32)
         self.depth_buf = np.zeros([self.size, 224, 224, 1], dtype=np.float32)
         self.pixel_index_buf = np.zeros([self.size, 3], dtype=np.int)
-        self.reward_buf = np.zeros([self.size], dtype=np.int)
+        self.reward_buf = np.zeros([self.size], dtype=np.float32)
         self.next_color_buf = np.zeros(
             [self.size, 224, 224, 3], dtype=np.float32)
         self.next_depth_buf = np.zeros(
             [self.size, 224, 224, 1], dtype=np.float32)
-        self.is_empty_buf = np.zeros([self.size], dtype=np.bool)
+        self.is_empty_buf = np.zeros([self.size], dtype=np.float32)
 
         for i, key in enumerate(tqdm(f.keys())):
             group = f[key]
@@ -34,10 +34,10 @@ class GraspDataset(Dataset):
             self.next_color_buf[i] = group['next_state/color'][()]/255.0
             self.next_depth_buf[i] = np.expand_dims(
                 group['next_state/depth'][()], axis=2)/1000.0
-            self.is_empty_buf[i] = group['next_state/empty'][()]
+            self.is_empty_buf[i] = 1 if group['next_state/empty'][()] else 0
 
         if normalize:
-            print('calculation mean & standard deviation')
+            print('calculate mean & standard deviation')
             color_mu = np.mean(self.color_buf, axis=(0, 1, 2))
             color_std = np.std(self.color_buf, axis=(0, 1, 2))
             print('color_mu', color_mu)
