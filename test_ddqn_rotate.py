@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from utils.replay_buffer import GraspDataset
 from utils.visualization import plot_vlaues
-from network import Network
+from network import NetworkRotate
 
 torch.cuda.empty_cache()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,7 +22,7 @@ loader = DataLoader(dataset=replay_buffer,
                     shuffle=True,
                     num_workers=4)
 
-dqn = Network(device, output_head=4).to(device)
+dqn = NetworkRotate(device).to(device)
 dqn.load_state_dict(torch.load('wandb/latest-run/files/model.pth'))
 dqn.eval()
 
