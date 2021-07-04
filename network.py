@@ -11,7 +11,28 @@ from torch.autograd import Variable
 from torch.nn import ModuleList
 from torch.nn import ParameterList
 from torch.nn.parameter import Parameter
-from torchvision import models
+from torchvision import models, transforms
+
+
+class PreProcess(nn.Module):
+    def __init__(self):
+        super(PreProcess, self).__init__()
+
+        self.resize = transforms.Resize((448, 448))
+        self.pad = (96, 96, 96, 96)
+
+    def forward(self, color: torch.Tensor, depth: torch.Tensor):
+        
+        color = color[:, [2, 1, 0], :, :]
+        depth = depth.repeat(1, 3, 1, 1)
+
+        depth_2x = self.resize(depth)
+        color_2x = self.resize(color)
+
+        depth_pad = F.pad(depth_2x, self.pad, "constant", 0)
+        color_pad = F.pad(color_2x, self.pad, "constant", 0)
+
+        return color_pad, depth_pad
 
 
 class GraspNet(nn.Module):
@@ -27,7 +48,7 @@ class GraspNet(nn.Module):
             nn.Upsample(scale_factor=4, mode="bilinear"),
             nn.Conv2d(64, 1, kernel_size=1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            nn.Upsample(scale_factor=8, mode="bilinear"),
+            nn.Upsample(scale_factor=4, mode="bilinear"),
         )
 
         if initialize:
@@ -68,14 +89,14 @@ class NetworkRotate(nn.Module):
         self,
         device,
         rotations=np.array([-90, -45, 0, 45]),
-        # rotations=np.array([-90, -67.5, -45, -22.5, 0, 22.5, 45, 67.5]),
     ):
         super(NetworkRotate, self).__init__()
 
         self.color_feature_encoder = models.densenet121(pretrained=True)
         self.depth_feature_encoder = models.densenet121(pretrained=True)
+        del self.color_feature_encoder.classifier, self.depth_feature_encoder.classifier
 
-        self.grasp_net = GraspNet(initialize=True)
+        self.grasp_net = GraspNet(initialize=False)
         self.full_rot_mat = self.get_rot_matrix(rotations).to(device)
         self.full_rot_back_mat = self.get_rot_matrix(-rotations).to(device)
         self.rotate_n = len(rotations)
@@ -97,14 +118,14 @@ class NetworkRotate(nn.Module):
         x = F.grid_sample(x, grid, mode="nearest")
         return x
 
-    def forward(self, color: torch.Tensor, depth: torch.Tensor, theta: float = None) -> torch.Tensor:
+    def forward_all_angle(self, color: torch.Tensor, depth: torch.Tensor) -> torch.Tensor:
         b_szie = color.shape[0]
+
         color = torch.repeat_interleave(color, repeats=self.rotate_n, dim=0)
         depth = torch.repeat_interleave(depth, repeats=self.rotate_n, dim=0)
         rot_mat = self.full_rot_mat.repeat(b_szie, 1, 1)
         r_colors = self.rotate_img(color, rot_mat)
         r_depths = self.rotate_img(depth, rot_mat)
-        r_depths = r_depths.repeat(1, 3, 1, 1)
 
         r_feature_color = self.color_feature_encoder.features(r_colors)
         r_feature_depth = self.color_feature_encoder.features(r_depths)
@@ -114,6 +135,24 @@ class NetworkRotate(nn.Module):
         q = self.rotate_img(q, rot_back_mat)
 
         # q = [b0r0, b0r1, b0r2, ... , bnr6, bnr7]
-        q = torch.reshape(q, (b_szie, self.rotate_n, 224, 224))
+        q = torch.reshape(q, (b_szie, self.rotate_n, 320, 320))
+        # crop center
+        q = q[:, :, 48:272, 48:272]
+
+        return q
+
+    # batch size = 1
+    def forward(self, color: torch.Tensor, depth: torch.Tensor, theta_idx: float) -> torch.Tensor:
+
+        rot_mat = self.full_rot_mat[theta_idx].unsqueeze(dim=0)
+        r_colors = self.rotate_img(color, rot_mat)
+        r_depths = self.rotate_img(depth, rot_mat)
+
+        r_feature_color = self.color_feature_encoder.features(r_colors)
+        r_feature_depth = self.color_feature_encoder.features(r_depths)
+        r_features = torch.cat((r_feature_color, r_feature_depth), dim=1)
+        q = self.grasp_net(r_features)
+        rot_back_mat = self.full_rot_back_mat[theta_idx].unsqueeze(dim=0)
+        q = self.rotate_img(q, rot_back_mat)[0][:, 48:272, 48:272]
 
         return q
