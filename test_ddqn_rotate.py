@@ -27,7 +27,6 @@ rotations = np.array([-90, -45, 0, 45])
 preprocess = PreProcess()
 dqn = NetworkRotate(device, rotations).to(device)
 dqn.load_state_dict(torch.load('wandb/latest-run/files/model.pth'))
-dqn.eval()
 
 
 for color, depth, n_color, n_depth, action, reward, done in loader:

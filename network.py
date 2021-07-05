@@ -97,9 +97,12 @@ class NetworkRotate(nn.Module):
         del self.color_feature_encoder.classifier, self.depth_feature_encoder.classifier
 
         self.grasp_net = GraspNet(initialize=False)
+
+        self.rotate_n = len(rotations)
+        rotations = np.concatenate((rotations, 180+rotations))
         self.full_rot_mat = self.get_rot_matrix(rotations).to(device)
         self.full_rot_back_mat = self.get_rot_matrix(-rotations).to(device)
-        self.rotate_n = len(rotations)
+        
 
     def get_rot_matrix(self, degree: np.ndarray) -> torch.Tensor:
         theta = torch.tensor(np.radians(degree))
