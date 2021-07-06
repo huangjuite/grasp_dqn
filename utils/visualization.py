@@ -38,15 +38,17 @@ def plot_vlaues(color: np.ndarray, depth: np.ndarray, values: np.ndarray, action
     ax2 = f.add_subplot(3, 2, 2)
     ax2.imshow(depth)
 
-    heatmap = to_colorMap(values)
-
-    for i, v in enumerate(heatmap):
-        ax = f.add_subplot(3, 4, i+5)
+    heatmaps = to_colorMap(values)
+    rn = len(heatmaps)
+    for i, v in enumerate(heatmaps):
+        ax = f.add_subplot(3, rn, i+1+rn)
         ax.imshow(v)
-        ax = f.add_subplot(3, 4, i+9)
+        ax = f.add_subplot(3, rn, i+1+rn*2)
+        merge = None
         merge = cv2.addWeighted(color, 1, v, 0.8, 0.0)
         if i == action[0]:
-            print(action)
+            plt.title('pixel(%d, %d)' %
+                      (action[1], action[2]))
             merge = cv2.circle(
-                merge, (action[1], action[2]), 3, (255, 255, 255), 2)
+                merge, (action[2], action[1]), 6, (0, 0, 0), -1)
         ax.imshow(merge)

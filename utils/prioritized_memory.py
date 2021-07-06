@@ -90,11 +90,11 @@ class ReplayBuffer():
         for key in f.keys():
             group = f[key]
             color = group['state/color'][()].astype(np.float32)/255.0
-            depth = group['state/depth'][()].astype(np.float32)
+            depth = group['state/depth'][()].astype(np.float32)/1000.0
             pixel_index = group['action'][()].astype(np.int)
             reward = group['reward'][()]
             next_color = group['next_state/color'][()].astype(np.float32)/255.0
-            next_depth = group['next_state/depth'][()].astype(np.float32)
+            next_depth = group['next_state/depth'][()].astype(np.float32)/1000.0
             is_empty = 1 if group['next_state/empty'][()] else 0
 
             transition = Transition(

@@ -38,29 +38,29 @@ class GraspDataset(Dataset):
             self.is_empty_buf[i] = 1 if group['next_state/empty'][()] else 0
 
         if normalize:
-            # print('calculate mean & standard deviation')
-            # color_mu = np.mean(self.color_buf, axis=(0, 1, 2))
-            # color_std = np.std(self.color_buf, axis=(0, 1, 2))
-            # print('color_mu', color_mu)
-            # print('color_std', color_std)
-            # depth_mu = np.mean(self.depth_buf, axis=(0, 1, 2))
-            # depth_std = np.std(self.depth_buf, axis=(0, 1, 2))
-            # print('depth_mu', depth_mu)
-            # print('depth_std', depth_std)
+            print('calculate mean & standard deviation')
+            color_mu = np.mean(self.color_buf, axis=(0, 1, 2))
+            color_std = np.std(self.color_buf, axis=(0, 1, 2))
+            print('color_mu', color_mu)
+            print('color_std', color_std)
+            depth_mu = np.mean(self.depth_buf, axis=(0, 1, 2))
+            depth_std = np.std(self.depth_buf, axis=(0, 1, 2))
+            print('depth_mu', depth_mu)
+            print('depth_std', depth_std)
 
             self.color_transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize(
-                    mean=[0.33638567, 0.33638567, 0.33638567],
-                    std=[0.2603763,  0.2443466,  0.24258484],
+                    mean=color_mu,
+                    std=color_std,
                 ),
             ])
 
             self.depth_transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize(
-                    mean=1.3136337,
-                    std=1.9633287,
+                    mean=depth_mu,
+                    std=depth_std,
                 ),
             ])
         else:

@@ -21,7 +21,7 @@ config = dict(
     batch_size=10,
     normalize=True,
 )
-wandb.init(config=config, project="grasp-ddqn", name='ddqn-rotate-4')
+wandb.init(config=config, project="grasp-ddqn", name='ddqn-rotate-8')
 config = wandb.config
 print(config)
 
@@ -31,8 +31,10 @@ torch.random.manual_seed(777)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 
-rotations = np.array([-90, -45, 0, 45])
-# rotations=np.array([-90, -67.5, -45, -22.5, 0, 22.5, 45, 67.5])
+replay_buffer = ReplayBuffer('Logger05_8.hdf5')
+
+# rotations = np.array([-90, -45, 0, 45])
+rotations = np.array([-90, -67.5, -45, -22.5, 0, 22.5, 45, 67.5])
 
 preprocess = PreProcess()
 dqn = NetworkRotate(device, rotations).to(device)
@@ -50,8 +52,6 @@ optimizer = optim.SGD(
     momentum=0.9,
     weight_decay=2e-5,
 )
-
-replay_buffer = ReplayBuffer('logger05.hdf5')
 
 
 def get_target_value(n_color, n_depth, reward, done):

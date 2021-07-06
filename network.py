@@ -22,7 +22,7 @@ class PreProcess(nn.Module):
         self.pad = (96, 96, 96, 96)
 
     def forward(self, color: torch.Tensor, depth: torch.Tensor):
-        
+        # rgb 2 bgr
         color = color[:, [2, 1, 0], :, :]
         depth = depth.repeat(1, 3, 1, 1)
 
@@ -156,6 +156,7 @@ class NetworkRotate(nn.Module):
         r_features = torch.cat((r_feature_color, r_feature_depth), dim=1)
         q = self.grasp_net(r_features)
         rot_back_mat = self.full_rot_back_mat[theta_idx].unsqueeze(dim=0)
+        # crop center 224x224
         q = self.rotate_img(q, rot_back_mat)[0][:, 48:272, 48:272]
 
         return q
